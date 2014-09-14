@@ -1,5 +1,10 @@
 require 'active_support/core_ext/class/attribute'
 
+begin
+  require 'travis/yaml'
+rescue LoadError
+end
+
 module Travis
   module Github
     module Services
@@ -44,6 +49,18 @@ module Travis
           end
 
           def parse(yaml)
+            if Travis::Features.active?(:travis_yaml, request.repository)
+              parse_travis(yaml)
+            else
+              parse_psych(yaml)
+            end
+          end
+
+          def parse_travis(yaml)
+            Travis::Yaml.load(yaml).serialize(:legacy)
+          end
+
+          def parse_psych(yaml)
             YAML.load(yaml).merge('.result' => 'configured')
           rescue StandardError, Psych::SyntaxError => e
             error "[request:fetch_config] Error parsing .travis.yml for #{config_url}: #{e.message}"

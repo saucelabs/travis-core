@@ -69,6 +69,32 @@ describe Travis::Github::Services::FetchConfig do
         result.has_key?("osx_image").should be false
       end
     end
+
+    context 'using travis-yaml' do
+      before { Travis::Features.stubs(:active?).returns(true) }
+
+      it "lets travis-yaml format the config" do
+        result['language'].should be == 'ruby'
+      end
+
+      it "sets .result" do
+        result[".result"].should be == 'configured'
+      end
+
+      it "includes warnings" do
+        result[".result_warnings"].should include([[], 'unexpected key "foo", dropping'])
+      end
+
+      it "properly sets .result parse errors" do
+        GH.stubs(:[]).returns({ "content" => ["\tfoo: Foo"].pack("m") })
+        result['.result'].should be == 'parse_error'
+      end
+
+      it "returns the error message for an invalid .travis.yml file" do
+        GH.stubs(:[]).returns({ "content" => ["\tfoo: Foo"].pack("m") })
+        result[".result_message"].should match(/line 1 column 1/)
+      end
+    end
   end
 end
 

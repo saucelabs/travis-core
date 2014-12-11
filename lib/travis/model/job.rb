@@ -23,6 +23,7 @@ class Job < Travis::Model
     mariadb
     postgresql
     ssh_known_hosts
+    jwt
   ).freeze
 
   class << self
@@ -133,13 +134,8 @@ class Job < Travis::Model
     normalize_config(self.config).deep_dup.tap do |config|
       config[:env] = process_env(config[:env]) { |env| decrypt_env(env) } if config[:env]
       config[:global_env] = process_env(config[:global_env]) { |env| decrypt_env(env) } if config[:global_env]
-      if config[:addons]
-        if addons_enabled?
-          config[:addons] = decrypt_addons(config[:addons])
-        else
-          delete_addons(config)
-        end
-      end
+      delete_addons(config) if config[:addons] && !addons_enabled?
+      config[:addons] = decrypt_addons(config[:addons]) if config[:addons]
     end
   rescue => e
     logger.warn "[job id:#{id}] Config could not be decrypted due to #{e.message}"

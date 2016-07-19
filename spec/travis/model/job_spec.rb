@@ -357,10 +357,14 @@ describe Job do
       end
 
       it 'decrypts whitelisted addons', :only => true do
+        secret_str = job.repository.key.secure.encrypt('ABC=foobar')
         config = { rvm: '1.8.7',
                    addons: {
                      jwt: {
-                       secret: job.repository.key.secure.encrypt('ABC=foobar')
+                       secret: secret_str
+                     },
+                     apt_packages: {
+                       secret: secret_str
                      }
                    }
                  }
@@ -371,6 +375,9 @@ describe Job do
           addons: {
             jwt: {
               secret: 'ABC=foobar'
+            },
+            apt_packages: {
+              secret: { :secure => secret_str["secure"] }
             }
           }
         }
